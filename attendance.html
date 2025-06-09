@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chấm công</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef2f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: white;
+      max-width: 480px;
+      width: 100%;
+      border-radius: 15px;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid #ddd;
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    #message {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    #timestamp {
+      font-size: 18px;
+      color: #555;
+      display: none;
+    }
+
+    .success {
+      color: #28a745;
+    }
+
+    .error {
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div id="loading">
+      <h1>Đang xử lý chấm công...</h1>
+      <div class="spinner"></div>
+    </div>
+
+    <div id="icon"></div>
+    <div id="message"></div>
+    <div id="timestamp"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get('id');
+
+    const iconEl = document.getElementById('icon');
+    const msgEl = document.getElementById('message');
+    const timeEl = document.getElementById('timestamp');
+    const loadingEl = document.getElementById('loading');
+
+    function getFormattedDateTime() {
+      const now = new Date();
+      const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const time = now.toLocaleTimeString('vi-VN');
+      return { date, time };
+    }
+
+    if (!userId) {
+      loadingEl.style.display = 'none';
+
+      iconEl.textContent = '❌';
+      iconEl.style.display = 'block';
+
+      msgEl.textContent = 'Không tìm thấy ID nhân viên!';
+      msgEl.className = 'error';
+      msgEl.style.display = 'block';
+
+      timeEl.style.display = 'none';
+
+    } else {
+      fetch('https://35fb-2405-4802-1bbd-7700-55b7-606e-3e09-6e69.ngrok-free.app/api/nhanvien/chamcong', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(`Lỗi API: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        loadingEl.style.display = 'none';
+
+        iconEl.textContent = '✅';
+        iconEl.style.display = 'block';
+
+        msgEl.textContent = data.message || 'Chấm công thành công!';
+        msgEl.className = 'success';
+        msgEl.style.display = 'block';
+
+        const dateTime = getFormattedDateTime();
+        timeEl.textContent = `Bạn đã chấm công thành công vào ngày ${dateTime.date} lúc ${dateTime.time}.`;
+        timeEl.style.display = 'block';
+      })
+      .catch(err => {
+        loadingEl.style.display = 'none';
+
+        iconEl.textContent = '❌';
+        iconEl.style.display = 'block';
+
+        msgEl.textContent = 'Lỗi khi gọi API chấm công: ' + err.message;
+        msgEl.className = 'error';
+        msgEl.style.display = 'block';
+
+        timeEl.style.display = 'none';
+      });
+    }
+  </script>
+
+</body>
+</html>
